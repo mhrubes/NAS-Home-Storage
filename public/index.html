@@ -47,6 +47,8 @@
   .ibtn svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
   [data-tip]::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(2px); background:var(--text); color:var(--bg); padding:4px 9px; border-radius:6px; font-size:12px; font-weight:500; line-height:1.4; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .12s, transform .12s; z-index:30; }
   [data-tip]:hover::after, [data-tip]:focus-visible::after { opacity:1; transform:translateX(-50%); }
+  /* tooltip pod tlacitkem (pro tlacitka u horniho okraje, kde by nad nimi neprevysel misto) */
+  [data-tip].tip-below::after { bottom:auto; top:calc(100% + 8px); }
   [data-tip].tip-start::after { left:0; transform:translateY(2px); }
   [data-tip].tip-start:hover::after, [data-tip].tip-start:focus-visible::after { transform:none; }
   [data-tip].tip-end::after { left:auto; right:0; transform:translateY(2px); }
@@ -115,11 +117,11 @@
 <div id="app" class="hidden">
   <header>
     <h1>NAS úložiště</h1>
-    <button class="ghost ibtn tip-end" id="logout" data-tip="Odhlásit" aria-label="Odhlásit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+    <button class="ghost ibtn tip-end tip-below" id="logout" data-tip="Odhlásit" aria-label="Odhlásit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
   </header>
   <div class="toolbar">
-    <button class="ibtn tip-start" id="upBtn" data-tip="Nahrát soubory" aria-label="Nahrát soubory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-    <button class="ghost ibtn" id="mkdirBtn" data-tip="Nová složka" aria-label="Nová složka"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg></button>
+    <button class="ibtn tip-start tip-below" id="upBtn" data-tip="Nahrát soubory" aria-label="Nahrát soubory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+    <button class="ghost ibtn tip-below" id="mkdirBtn" data-tip="Nová složka" aria-label="Nová složka"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg></button>
     <input type="file" id="fileInput" multiple class="hidden">
   </div>
   <div id="drop">Přetáhni soubory sem</div>
