@@ -1,0 +1,13 @@
+services:
+  storage:
+    build: .
+    container_name: nas-storage
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      STORAGE_DIR: /data
+    ports:
+      - "3000:3000"
+    volumes:
+      # cesta na NASu, kam se ukladaji soubory (nastav STORAGE_PATH v .env, jinak ./data)
+      - ${STORAGE_PATH:-./data}:/data

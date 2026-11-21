@@ -1,0 +1,19 @@
+{
+  "name": "nas-storage",
+  "version": "1.0.0",
+  "description": "Jednoduche domaci uloziste s prihlasenim (scrypt hash v .env)",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --env-file=.env --watch src/index.js",
+    "start": "node src/index.js",
+    "hash": "node scripts/hash.js"
+  },
+  "engines": {
+    "node": ">=20.6"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
