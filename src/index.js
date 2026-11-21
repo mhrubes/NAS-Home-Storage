@@ -102,6 +102,38 @@ app.get('/api/files', requireAuth, wrap(async (req, res) => {
   res.json(items);
 }));
 
+// celkova velikost slozky (rekurzivne, bez symlinku); cache 5 min, maze se pri kazde zmene
+const sizeCache = new Map();
+const SIZE_TTL = 5 * 60 * 1000;
+
+async function dirSize(dir) {
+  let total = 0;
+  const stack = [dir];
+  while (stack.length) {
+    const d = stack.pop();
+    const entries = await fsp.readdir(d, { withFileTypes: true });
+    await Promise.all(entries.map(async (e) => {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) stack.push(p);
+      else if (e.isFile()) {
+        const st = await fsp.stat(p).catch(() => null);
+        total += st ? st.size : 0; // plus po awaitu, jinak se pri paralelnim behu ztraceji soucty
+      }
+    }));
+  }
+  return total;
+}
+
+app.get('/api/size', requireAuth, wrap(async (req, res) => {
+  const dir = safePath(req.query.path);
+  const hit = sizeCache.get(dir);
+  if (hit && Date.now() - hit.t < SIZE_TTL) return res.json({ size: hit.size });
+  if (!(await fsp.stat(dir)).isDirectory()) throw new Error('Not a directory');
+  const size = await dirSize(dir);
+  sizeCache.set(dir, { size, t: Date.now() });
+  res.json({ size });
+}));
+
 app.get('/api/download', requireAuth, wrap(async (req, res) => {
   const file = safePath(req.query.path);
   const st = await fsp.stat(file);
@@ -139,12 +171,14 @@ app.put('/api/upload', requireAuth, wrap(async (req, res) => {
     throw err;
   });
   await fsp.rename(tmp, target);
+  sizeCache.clear();
   res.status(201).json({ ok: true, size });
 }));
 
 app.post('/api/mkdir', requireAuth, jsonBody, wrap(async (req, res) => {
   const dir = safePath(req.body?.path);
   await fsp.mkdir(path.join(dir, safeName(req.body?.name)));
+  sizeCache.clear();
   res.status(201).json({ ok: true });
 }));
 
@@ -162,6 +196,7 @@ app.post('/api/move', requireAuth, jsonBody, wrap(async (req, res) => {
     throw Object.assign(new Error('Target already exists'), { status: 409 });
   }
   await fsp.rename(from, to);
+  sizeCache.clear();
   res.json({ ok: true });
 }));
 
@@ -169,6 +204,7 @@ app.delete('/api/files',requireAuth, wrap(async (req, res) => {
   const target = safePath(req.query.path);
   if (target === ROOT) throw new Error('Cannot delete root');
   await fsp.rm(target, { recursive: true });
+  sizeCache.clear();
   res.json({ ok: true });
 }));
 

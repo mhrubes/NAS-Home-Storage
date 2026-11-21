@@ -30,13 +30,18 @@
   .crumbs { margin-bottom:8px; color:var(--muted); word-break:break-all; }
   .crumbs a { color:var(--accent); cursor:pointer; }
   .list { background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-  .row { display:grid; grid-template-columns: 1fr auto auto; gap:12px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); }
+  .row { display:grid; grid-template-columns: 1fr 80px 140px 220px; gap:12px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); }
   .row:last-child { border-bottom:0; }
   .row .name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .row .name a { color:inherit; cursor:pointer; text-decoration:none; }
   .row .name a:hover { color:var(--accent); }
   .meta { color:var(--muted); font-size:13px; white-space:nowrap; }
-  .actions { display:flex; gap:6px; }
+  .meta.size { text-align:right; padding-right:28px; }
+  .sub { display:none; color:var(--muted); font-size:12px; }
+  .actions { display:flex; gap:6px; justify-content:flex-end; }
+  .row.head { background:color-mix(in srgb, var(--muted) 8%, transparent); color:var(--muted); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding-top:8px; padding-bottom:8px; }
+  .row.head > :nth-child(2) { text-align:right; padding-right:28px; }
+  .row.head > :nth-child(4) { text-align:right; }
   .row[draggable=true] { cursor:grab; }
   .row.over { background:color-mix(in srgb, var(--accent) 18%, transparent); }
   .crumbs a.over { outline:2px solid var(--accent); border-radius:4px; }
@@ -61,7 +66,7 @@
   #drop { border:2px dashed var(--line); border-radius:10px; padding:14px; text-align:center; color:var(--muted); margin-bottom:12px; }
   #drop.over { border-color:var(--accent); color:var(--accent); }
   #status { font-size:13px; color:var(--muted); margin-bottom:8px; min-height:1.2em; }
-  @media (max-width:560px) { .row { grid-template-columns: 1fr auto; } .row .meta.date { display:none; } }
+  @media (max-width:640px) { .row.head { display:none; } .row { grid-template-columns: 1fr auto; } .row .meta { display:none; } .sub { display:block; } }
 </style>
 </head>
 <body>
@@ -141,6 +146,11 @@ function fmtSize(n) {
   const u = ['B','KB','MB','GB','TB']; let i = 0;
   while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
   return (i ? n.toFixed(1) : n) + ' ' + u[i];
+}
+
+function fmtDate(ms) {
+  if (!ms) return '';
+  return new Date(ms).toLocaleString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function setStatus(t) { $('status').textContent = t || ''; }
@@ -254,6 +264,12 @@ function makeDropTarget(el, dir) {
 
 function renderList(items) {
   const list = $('list'); list.textContent = '';
+  const jobs = [];
+  const head = document.createElement('div'); head.className = 'row head';
+  for (const t of ['Název', 'Velikost', 'Datum přidání', 'Operace']) {
+    const c = document.createElement('div'); c.textContent = t; head.append(c);
+  }
+  list.append(head);
   if (cwd) { // radek ".." = o uroven vys (i cil pro presun)
     const parent = cwd.split('/').slice(0, -1).join('/');
     const row = document.createElement('div'); row.className = 'row';
@@ -261,7 +277,7 @@ function renderList(items) {
     const a = document.createElement('a'); a.textContent = '⬆️ ..'; a.onclick = () => load(parent);
     name.append(a);
     makeDropTarget(row, parent);
-    row.append(name, document.createElement('div'), document.createElement('div'));
+    row.append(name, document.createElement('div'), document.createElement('div'), document.createElement('div'));
     list.append(row);
   }
   if (!items.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = 'Složka je prázdná'; list.append(d); return; }
@@ -278,8 +294,14 @@ function renderList(items) {
     if (it.dir) a.onclick = () => load(full);
     else a.href = '/api/download?path=' + encodeURIComponent(full);
     name.append(a);
-    const meta = document.createElement('div'); meta.className = 'meta';
+    const meta = document.createElement('div'); meta.className = 'meta size';
     meta.textContent = fmtSize(it.size);
+    const date = document.createElement('div'); date.className = 'meta date';
+    date.textContent = fmtDate(it.mtime);
+    const sub = document.createElement('div'); sub.className = 'sub'; // jen na mobilu
+    sub.textContent = [fmtSize(it.size), fmtDate(it.mtime)].filter(Boolean).join(' · ');
+    name.append(sub);
+    if (it.dir) { meta.textContent = '…'; jobs.push({ full, meta, sub, date: fmtDate(it.mtime) }); } // velikost slozky se dopocita async
     const del = document.createElement('button'); del.className = 'danger'; del.textContent = 'Smazat';
     del.onclick = async () => {
       const ok = await askConfirm({
@@ -302,8 +324,23 @@ function renderList(items) {
     };
     const actions = document.createElement('div'); actions.className = 'actions';
     actions.append(ren, del);
-    row.append(name, meta, actions);
+    row.append(name, meta, date, actions);
     list.append(row);
+  }
+  loadSizes(jobs);
+}
+
+// soucty velikosti slozek: po jedne, aby se server nezahltil; zastaralá davka se zahodi
+let sizeJob = 0;
+async function loadSizes(jobs) {
+  const job = ++sizeJob;
+  for (const j of jobs) {
+    if (job !== sizeJob) return;
+    try {
+      const { size } = await api('/api/size?path=' + encodeURIComponent(j.full));
+      j.meta.textContent = fmtSize(size);
+      j.sub.textContent = [fmtSize(size), j.date].filter(Boolean).join(' · ');
+    } catch { j.meta.textContent = '–'; }
   }
 }
 
