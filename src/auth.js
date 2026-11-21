@@ -1,5 +1,5 @@
-// Overeni prihlaseni: scrypt hash z ENV + stateless podepsany cookie token.
-const { scryptSync, timingSafeEqual, createHmac } = require('crypto');
+// Overeni prihlaseni: scrypt hash z ENV + stateless podepsany cookie token (obsahuje id relace).
+const { scryptSync, timingSafeEqual, createHmac, randomBytes } = require('crypto');
 
 const [salt, hash] = (process.env.APP_PASSWORD_HASH || '').split(':');
 const secret = process.env.SESSION_SECRET;
@@ -22,18 +22,24 @@ function checkLogin(user, password) {
   return passOk && userOk;
 }
 
-const sign = (exp) => createHmac('sha256', secret).update(String(exp)).digest('hex');
+const sign = (payload) => createHmac('sha256', secret).update(payload).digest('hex');
 
-// token = <expirace>.<hmac>
-function signToken(ttlMs) {
-  const exp = Date.now() + ttlMs;
-  return `${exp}.${sign(exp)}`;
+// token = <expirace>.<id relace>.<hmac>
+function signToken(ttlMs, sid = randomBytes(12).toString('hex')) {
+  const payload = `${Date.now() + ttlMs}.${sid}`;
+  return `${payload}.${sign(payload)}`;
 }
 
-function verifyToken(token) {
-  const [exp, sig] = String(token ?? '').split('.');
-  if (!exp || !sig || !(Number(exp) > Date.now())) return false;
-  return safeEqual(Buffer.from(sig), Buffer.from(sign(exp)));
+// vrati { exp, sid } u platneho tokenu, jinak null
+function parseToken(token) {
+  const parts = String(token ?? '').split('.');
+  if (parts.length !== 3) return null;
+  const [exp, sid, sig] = parts;
+  if (!/^\d+$/.test(exp) || !/^[0-9a-f]{24}$/.test(sid) || !(Number(exp) > Date.now())) return null;
+  return safeEqual(Buffer.from(sig), Buffer.from(sign(`${exp}.${sid}`))) ? { exp: Number(exp), sid } : null;
 }
 
-module.exports = { checkLogin, signToken, verifyToken };
+const verifyToken = (token) => parseToken(token) !== null;
+const tokenExpiry = (token) => parseToken(token)?.exp ?? 0;
+
+module.exports = { checkLogin, signToken, parseToken, verifyToken, tokenExpiry };

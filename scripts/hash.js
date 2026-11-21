@@ -1,4 +1,4 @@
-// Vygeneruje APP_PASSWORD_HASH pro .env. Pouziti: npm run hash -- "mojeHeslo"
+// Vygeneruje APP_PASSWORD_HASH (scrypt) a SESSION_SECRET pro .env. Pouziti: npm run hash -- "heslo"
 const { scryptSync, randomBytes } = require('crypto');
 
 const password = process.argv[2];
