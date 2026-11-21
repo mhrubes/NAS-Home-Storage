@@ -1,7 +1,7 @@
 services:
   storage:
     build: .
-    container_name: nas-storage
+    container_name: nas-files-storage
     restart: unless-stopped
     env_file: .env
     environment:
