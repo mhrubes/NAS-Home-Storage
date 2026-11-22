@@ -70,6 +70,8 @@
   .ibtn svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
   [data-tip]::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(2px); background:var(--text); color:var(--bg); padding:4px 9px; border-radius:6px; font-size:12px; font-weight:500; line-height:1.4; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .12s, transform .12s; z-index:30; }
   [data-tip]:hover::after, [data-tip]:focus-visible::after { opacity:1; transform:translateX(-50%); }
+  [data-tip]:hover, [data-tip]:focus-visible { z-index:50; }
+  header { position:relative; z-index:35; }
   /* tooltip pod tlacitkem (pro tlacitka u horniho okraje, kde by nad nimi neprevysel misto) */
   [data-tip].tip-below::after { bottom:auto; top:calc(100% + 8px); }
   [data-tip].tip-start::after { left:0; transform:translateY(2px); }
