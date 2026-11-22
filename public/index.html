@@ -5,43 +5,66 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NAS úložiště</title>
 <style>
-  :root { --bg:#f4f5f7; --card:#fff; --text:#1c1e21; --muted:#6b7280; --line:#e5e7eb; --accent:#2563eb; --danger:#dc2626; }
+  :root { --bg:#f4f5f7; --card:#fff; --text:#1c1e21; --muted:#6b7280; --line:#e5e7eb; --accent:#2563eb; --danger:#dc2626; --ok:#22c55e; --warn:#f59e0b; }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#111317; --card:#1b1e24; --text:#e8eaed; --muted:#9aa0a6; --line:#2b2f37; --accent:#5b8def; --danger:#f0605d; }
   }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, sans-serif; }
   .hidden { display:none !important; }
-  button, input { font:inherit; }
+  button, input, select { font:inherit; }
   button { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:7px 14px; cursor:pointer; }
   button.ghost { background:transparent; color:var(--accent); border:1px solid var(--line); }
   button.danger { background:transparent; color:var(--danger); border:1px solid var(--line); }
-  input[type=text], input[type=password] { width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text); }
+  button:disabled { opacity:.45; cursor:default; filter:none !important; }
+  input[type=text], input[type=password], input[type=search], select { width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text); }
 
   #login { min-height:100vh; display:grid; place-items:center; padding:16px; }
   #login form { background:var(--card); padding:28px; border-radius:12px; width:100%; max-width:340px; display:grid; gap:12px; border:1px solid var(--line); }
   #login h1 { margin:0 0 4px; font-size:20px; }
   .err { color:var(--danger); min-height:1.2em; font-size:14px; }
 
-  #app { max-width:900px; margin:0 auto; padding:16px; }
-  header { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:12px; }
+  #app { max-width:980px; margin:0 auto; padding:16px 16px 70px; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
   header h1 { margin:0; font-size:20px; }
-  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .space { flex:1; max-width:300px; min-width:120px; font-size:12px; color:var(--muted); }
+  .space .bar { height:6px; background:var(--line); border-radius:999px; overflow:hidden; margin-top:3px; }
+  .space .bar i { display:block; height:100%; width:0; background:var(--accent); transition:width .4s; }
+  .space.low .bar i { background:var(--warn); }
+  .space.crit .bar i { background:var(--danger); }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .toolbar .sp { flex:1; }
+  .search { position:relative; flex:1 1 200px; max-width:340px; }
+  .search input { padding-left:32px; padding-right:30px; }
+  .search input::-webkit-search-cancel-button { display:none; }
+  .search svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; fill:none; stroke:var(--muted); stroke-width:2; stroke-linecap:round; pointer-events:none; }
+  .search .clear { position:absolute; right:4px; top:50%; transform:translateY(-50%); width:24px; height:24px; padding:0; background:transparent; color:var(--muted); border:0; }
+  .count { position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 4px; border-radius:9px; background:var(--accent); color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; pointer-events:none; }
   .crumbs { margin-bottom:8px; color:var(--muted); word-break:break-all; }
   .crumbs a { color:var(--accent); cursor:pointer; }
+  .crumbs a.over { outline:2px solid var(--accent); border-radius:4px; }
+
+  #selbar { position:sticky; top:8px; z-index:20; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px 12px; margin-bottom:10px; background:color-mix(in srgb, var(--accent) 14%, var(--card)); border:1px solid var(--accent); border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.2); }
+  #selbar strong { margin-right:auto; }
+
   .list { background:var(--card); border:1px solid var(--line); border-radius:10px; } /* bez overflow:hidden, aby tooltipy nebyly oriznute */
   .list > .row:first-child { border-radius:10px 10px 0 0; }
   .list > .row:last-child { border-radius:0 0 10px 10px; }
   .list > .row:only-child { border-radius:10px; }
-  .row { display:grid; grid-template-columns: 1fr 80px 140px 170px; gap:12px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); }
+  .row { display:grid; grid-template-columns: 24px minmax(0,1fr) 84px 150px 216px; gap:10px; align-items:center; padding:8px 14px; border-bottom:1px solid var(--line); }
   .row:last-child { border-bottom:0; }
-  .row .name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .row input[type=checkbox] { width:16px; height:16px; margin:0; cursor:pointer; accent-color:var(--accent); }
+  .row.selected { background:color-mix(in srgb, var(--accent) 12%, transparent); }
+  .row .name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
   .row .name a { color:inherit; cursor:pointer; text-decoration:none; }
   .row .name a:hover { color:var(--accent); }
+  .row .path { font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; }
+  .row .path a { color:var(--accent); }
   .meta { color:var(--muted); font-size:13px; white-space:nowrap; }
-  .meta.size { text-align:right; padding-right:28px; }
+  .meta.size { text-align:right; padding-right:20px; }
   .sub { display:none; color:var(--muted); font-size:12px; }
-  .actions { display:flex; gap:6px; justify-content:flex-end; }
+  .actions { display:flex; gap:4px; justify-content:flex-end; }
+  .actions .ibtn { width:32px; height:32px; }
   /* ikonova tlacitka s tooltipem (data-tip), zobrazi se po najeti nebo fokusu klavesnici */
   .ibtn { position:relative; width:36px; height:36px; padding:0; display:inline-grid; place-items:center; }
   .ibtn svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
@@ -54,44 +77,85 @@
   [data-tip].tip-end::after { left:auto; right:0; transform:translateY(2px); }
   [data-tip].tip-end:hover::after, [data-tip].tip-end:focus-visible::after { transform:none; }
   .row.head { background:color-mix(in srgb, var(--muted) 8%, transparent); color:var(--muted); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding-top:8px; padding-bottom:8px; }
-  .row.head > :nth-child(2) { text-align:right; padding-right:28px; }
-  .row.head > :nth-child(4) { text-align:right; }
+  .row.head .sortable { cursor:pointer; user-select:none; }
+  .row.head .sortable:hover { color:var(--text); }
+  .row.head > :nth-child(3) { text-align:right; padding-right:20px; }
+  .row.head > :nth-child(5) { text-align:right; }
   .row[draggable=true] { cursor:grab; }
   .row.over { background:color-mix(in srgb, var(--accent) 18%, transparent); }
-  .crumbs a.over { outline:2px solid var(--accent); border-radius:4px; }
   .row.dragging { opacity:.4; }
-  dialog { border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--text); padding:0; width:min(92vw, 400px); box-shadow:0 20px 60px rgba(0,0,0,.35); }
+  /* zamky a sdileni */
+  .badge { display:inline-flex; vertical-align:-2px; margin-left:8px; }
+  .badge svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .badge.locked { color:var(--warn); }
+  .badge.open { color:var(--ok); }
+  .badge.inherit, .badge.share { color:var(--muted); }
+  .badge.share { color:var(--accent); }
+  .row.locked .name a { opacity:.75; }
+  .row.locked { background:color-mix(in srgb, var(--warn) 7%, transparent); }
+
+  dialog { border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--text); padding:0; width:min(92vw, 420px); box-shadow:0 20px 60px rgba(0,0,0,.35); }
   dialog::backdrop { background:rgba(0,0,0,.5); backdrop-filter:blur(3px); }
   dialog[open] { animation:pop .15s ease-out; }
   @keyframes pop { from { opacity:0; transform:translateY(8px) scale(.97); } }
-  dialog form { padding:22px; display:grid; gap:12px; }
-  dialog h2 { margin:0; font-size:18px; }
+  dialog form, dialog .dbody { padding:22px; display:grid; gap:12px; }
+  dialog h2 { margin:0; font-size:18px; word-break:break-word; }
   dialog p { margin:0; color:var(--muted); word-break:break-word; }
   dialog label { font-size:13px; color:var(--muted); margin-bottom:-6px; }
-  .dlgActions { display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
+  .dlgActions { display:flex; justify-content:flex-end; gap:8px; margin-top:6px; flex-wrap:wrap; }
   .dlgErr { color:var(--danger); font-size:14px; }
   .dlgErr:empty { display:none; }
-  /* zamky */
-  .lockbadge { display:inline-flex; vertical-align:-2px; margin-left:8px; }
-  .lockbadge svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-  .lockbadge.locked { color:#f59e0b; }
-  .lockbadge.open { color:#22c55e; }
-  .lockbadge.inherit { color:var(--muted); }
-  .row.locked .name a { opacity:.75; }
-  .row.locked { background:color-mix(in srgb, #f59e0b 7%, transparent); }
   button.dangerSolid { background:var(--danger); }
-  #toasts { position:fixed; right:16px; bottom:16px; display:grid; gap:8px; z-index:10; max-width:calc(100vw - 32px); }
+  dialog.wide { width:min(94vw, 640px); }
+  dialog.pv { width:min(96vw, 1000px); }
+  .pvhead { display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--line); }
+  .pvhead h2 { flex:1; font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pvbody { display:grid; place-items:center; min-height:200px; max-height:78vh; overflow:auto; padding:12px; background:var(--bg); }
+  .pvbody img, .pvbody video { max-width:100%; max-height:74vh; }
+  .pvbody iframe { width:100%; height:74vh; border:0; background:#fff; }
+  .pvbody pre { margin:0; width:100%; white-space:pre-wrap; word-break:break-word; font:13px/1.5 ui-monospace, Consolas, monospace; align-self:start; }
+  .pvnote { font-size:12px; color:var(--muted); padding:6px 16px; border-top:1px solid var(--line); }
+  .list-mini { display:grid; gap:2px; max-height:280px; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:4px; }
+  .list-mini .li { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; cursor:pointer; }
+  .list-mini .li:hover { background:color-mix(in srgb, var(--accent) 15%, transparent); }
+  .list-mini .li.disabled { opacity:.4; cursor:default; }
+  .list-mini .li.disabled:hover { background:transparent; }
+  .shrow { display:grid; grid-template-columns: minmax(0,1fr) auto; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); }
+  .shrow:last-child { border-bottom:0; }
+  .shrow .t { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .shrow .m { font-size:12px; color:var(--muted); }
+  .linkbox { display:flex; gap:6px; }
+  .linkbox input { flex:1; }
+  .chk { display:flex; align-items:center; gap:8px; font-size:14px; color:var(--text) !important; margin-bottom:0 !important; }
+
+  #uploads { position:fixed; left:16px; bottom:88px; width:min(340px, calc(100vw - 32px)); max-height:50vh; overflow:auto; z-index:25; background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.3); }
+  #uploads .uh { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line); font-weight:600; font-size:14px; }
+  #uploads .uh span { flex:1; }
+  #uploads .uh button { padding:2px 8px; font-size:12px; }
+  .up { padding:8px 12px; border-bottom:1px solid var(--line); font-size:13px; }
+  .up:last-child { border-bottom:0; }
+  .up .n { display:flex; gap:8px; align-items:center; }
+  .up .n b { flex:1; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .up .n button { padding:0 6px; font-size:14px; line-height:20px; background:transparent; color:var(--muted); border:0; }
+  .up .bar { height:5px; background:var(--line); border-radius:999px; overflow:hidden; margin-top:5px; }
+  .up .bar i { display:block; height:100%; width:0; background:var(--accent); transition:width .2s; }
+  .up.done .bar i { background:var(--ok); }
+  .up.error .bar i { background:var(--danger); }
+  .up .st { color:var(--muted); font-size:12px; margin-top:2px; }
+  .up.error .st { color:var(--danger); }
+
+  #toasts { position:fixed; right:16px; bottom:16px; display:grid; gap:8px; z-index:40; max-width:calc(100vw - 32px); }
   .toast { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--accent); color:var(--text); padding:10px 16px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; transform:translateY(8px); transition:.25s; }
   .toast.show { opacity:1; transform:none; }
   .toast.error { border-left-color:var(--danger); }
-  button:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-  button { transition:filter .15s; } button:hover { filter:brightness(1.12); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  button { transition:filter .15s; } button:hover:not(:disabled) { filter:brightness(1.12); }
   #ring { position:fixed; left:16px; bottom:16px; width:60px; height:60px; border-radius:50%; background:var(--card); border:1px solid var(--line); box-shadow:0 6px 20px rgba(0,0,0,.25); display:grid; place-items:center; z-index:10; cursor:default; }
   #ring svg { position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
   #ring circle { fill:none; stroke-width:3; }
   #ring .bg { stroke:var(--line); }
   #ring .fg { stroke:var(--accent); stroke-linecap:round; transition:stroke-dashoffset .9s linear, stroke .3s; }
-  #ring.warn .fg { stroke:#f59e0b; }
+  #ring.warn .fg { stroke:var(--warn); }
   #ring.danger .fg { stroke:var(--danger); }
   #ringText { position:relative; font-size:13px; font-variant-numeric:tabular-nums; font-weight:600; }
   #ring.danger #ringText { color:var(--danger); }
@@ -99,8 +163,17 @@
   .empty { padding:24px; text-align:center; color:var(--muted); }
   #drop { border:2px dashed var(--line); border-radius:10px; padding:14px; text-align:center; color:var(--muted); margin-bottom:12px; }
   #drop.over { border-color:var(--accent); color:var(--accent); }
-  #status { font-size:13px; color:var(--muted); margin-bottom:8px; min-height:1.2em; }
-  @media (max-width:640px) { .row.head { display:none; } .row { grid-template-columns: 1fr auto; } .row .meta { display:none; } .sub { display:block; } }
+  .viewhead { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .viewhead h2 { margin:0; font-size:17px; flex:1; }
+  @media (max-width:760px) {
+    .row.head { display:none; }
+    .row { grid-template-columns: 24px minmax(0,1fr); }
+    .row .meta { display:none; }
+    .row .actions { grid-column:2; justify-content:flex-start; flex-wrap:wrap; }
+    .sub { display:block; }
+    .space { order:3; max-width:none; flex-basis:100%; }
+    header { flex-wrap:wrap; }
+  }
 </style>
 </head>
 <body>
@@ -118,16 +191,28 @@
 <div id="app" class="hidden">
   <header>
     <h1>NAS úložiště</h1>
+    <div class="space" id="space" title="Volné místo na disku"><span id="spaceText"></span><div class="bar"><i id="spaceBar"></i></div></div>
     <button class="ghost ibtn tip-end tip-below" id="logout" data-tip="Odhlásit" aria-label="Odhlásit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
   </header>
-  <div class="toolbar">
+  <div class="toolbar" id="toolbar">
     <button class="ibtn tip-start tip-below" id="upBtn" data-tip="Nahrát soubory" aria-label="Nahrát soubory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+    <button class="ghost ibtn tip-below" id="upDirBtn" data-tip="Nahrát složku" aria-label="Nahrát složku"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="m9 14 3-3 3 3"/><path d="M12 11v6"/></svg></button>
     <button class="ghost ibtn tip-below" id="mkdirBtn" data-tip="Nová složka" aria-label="Nová složka"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg></button>
+    <div class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="searchInput" placeholder="Hledat (/)" autocomplete="off" aria-label="Hledat v názvech">
+      <button class="clear hidden" id="searchClear" aria-label="Zrušit hledání" title="Zrušit hledání (Esc)">✕</button>
+    </div>
+    <span class="sp"></span>
+    <button class="ghost ibtn tip-below" id="sharesBtn" data-tip="Sdílené odkazy" aria-label="Sdílené odkazy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+    <button class="ghost ibtn tip-end tip-below" id="trashBtn" data-tip="Koš" aria-label="Koš"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span class="count hidden" id="trashCount"></span></button>
     <input type="file" id="fileInput" multiple class="hidden">
+    <input type="file" id="dirInput" webkitdirectory class="hidden">
   </div>
-  <div id="drop">Přetáhni soubory sem</div>
+  <div id="selbar" class="hidden"></div>
+  <div id="drop">Přetáhni soubory nebo složky sem</div>
   <div class="crumbs" id="crumbs"></div>
-  <div id="status"></div>
+  <div id="viewhead"></div>
   <div class="list" id="list"></div>
 </div>
 
@@ -146,6 +231,56 @@
     </div>
   </form>
 </dialog>
+
+<dialog id="panel" class="wide">
+  <div class="dbody">
+    <h2 id="panelTitle"></h2>
+    <div id="panelBody" style="display:grid;gap:12px"></div>
+    <div class="dlgActions"><button type="button" class="ghost" id="panelClose">Zavřít</button></div>
+  </div>
+</dialog>
+
+<dialog id="cnf">
+  <form method="dialog" class="dbody" id="cnfForm">
+    <h2>Soubor už existuje</h2>
+    <p id="cnfText"></p>
+    <label class="chk" id="cnfAllWrap"><input type="checkbox" id="cnfAll"> Použít pro všechny další soubory</label>
+    <div class="dlgActions">
+      <button type="button" class="ghost" data-c="skip">Přeskočit</button>
+      <button type="button" class="ghost" data-c="rename">Ponechat obě</button>
+      <button type="button" data-c="overwrite">Přepsat</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="pick">
+  <div class="dbody">
+    <h2 id="pickTitle">Vyber složku</h2>
+    <div class="crumbs" id="pickCrumbs" style="margin:0"></div>
+    <div class="list-mini" id="pickList"></div>
+    <div class="dlgActions">
+      <button type="button" class="ghost" id="pickCancel">Zrušit</button>
+      <button type="button" id="pickOk">Vybrat</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="pv" class="pv">
+  <div class="pvhead">
+    <button class="ghost ibtn" id="pvPrev" aria-label="Předchozí" title="Předchozí (←)"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button class="ghost ibtn" id="pvNext" aria-label="Další" title="Další (→)"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></button>
+    <h2 id="pvTitle"></h2>
+    <a class="ibtn" id="pvDl" style="text-decoration:none;color:var(--accent);border:1px solid var(--line);border-radius:6px" title="Stáhnout" aria-label="Stáhnout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+    <button class="ghost ibtn" id="pvClose" aria-label="Zavřít" title="Zavřít (Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="pvbody" id="pvBody"></div>
+  <div class="pvnote hidden" id="pvNote"></div>
+</dialog>
+
+<div id="uploads" class="hidden"></div>
+<form id="zipForm" method="post" action="/api/zip" target="dlframe" class="hidden"><input type="hidden" name="paths" id="zipPaths"></form>
+<iframe name="dlframe" class="hidden" title="stahování"></iframe>
+
 <div id="ring" class="hidden" title="Automatické odhlášení za nečinnost. Pohyb myší nebo psaní čas obnoví.">
   <svg viewBox="0 0 44 44" aria-hidden="true">
     <circle class="bg" cx="22" cy="22" r="19"></circle>
@@ -156,482 +291,6 @@
 <div class="appver" id="ver" title="Verze aplikace (z package.json)"></div>
 <div id="toasts"></div>
 
-<script>
-let cwd = ''; // relativni cesta aktualni slozky
-
-const $ = (id) => document.getElementById(id);
-const join = (a, b) => (a ? a + '/' + b : b);
-
-// --- automaticke odhlaseni pri necinnosti (jako v bankovnich aplikacich) ---
-// Odpocet se pocita z casove znacky (deadline), ne z poctu tiku, takze je presny i v neaktivni zalozce.
-// Aktivita (mys, klavesnice, dotyk, scroll, probihajici upload) odpocet vrati na plnou hodnotu;
-// prepnuti na jinou zalozku ho neresetuje.
-const RING_CIRC = 2 * Math.PI * 19;
-const KEEPALIVE_EVERY_MS = 10000;
-let timeoutMs = 0;
-let deadline = 0;
-let lastKeepalive = 0;
-let tickTimer = null;
-
-function startSession(timeoutSec, remainingSec) {
-  timeoutMs = timeoutSec * 1000;
-  deadline = Date.now() + remainingSec * 1000;
-  lastKeepalive = Date.now();
-  $('ring').classList.remove('hidden');
-  if (!tickTimer) tickTimer = setInterval(tick, 1000);
-  tick();
-}
-
-function endSession() {
-  clearInterval(tickTimer); tickTimer = null;
-  $('ring').classList.add('hidden');
-}
-
-function tick() {
-  if (!tickTimer) return;
-  const left = deadline - Date.now();
-  if (left <= 0) { sessionExpired(); return; }
-  const s = Math.ceil(left / 1000);
-  $('ringText').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-  $('ringFg').style.strokeDasharray = RING_CIRC;
-  $('ringFg').style.strokeDashoffset = RING_CIRC * (1 - Math.min(1, left / timeoutMs));
-  $('ring').classList.toggle('warn', left <= 30000 && left > 10000);
-  $('ring').classList.toggle('danger', left <= 10000);
-}
-
-function sessionExpired() {
-  endSession();
-  if ($('dlg').open) $('dlgCancel').click(); // rozepsany dialog se zavre
-  fetch('/api/logout', { method: 'POST' }).catch(() => {});
-  showLogin();
-  toast('Byl jsi odhlášen z důvodu nečinnosti', 'error');
-}
-
-function onActivity() {
-  if (!tickTimer) return;
-  const now = Date.now();
-  if (now >= deadline) return; // vyprsela, rozhodne tick()
-  deadline = now + timeoutMs;
-  if (now - lastKeepalive >= KEEPALIVE_EVERY_MS) { // server obnovime nejvyse jednou za 10 s
-    lastKeepalive = now;
-    fetch('/api/keepalive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-      .then((r) => { if (r.status === 401) sessionExpired(); }).catch(() => {});
-  }
-}
-for (const ev of ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel', 'scroll']) {
-  window.addEventListener(ev, onActivity, { passive: true, capture: true });
-}
-document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
-
-// 401 z API: pri aktivni relaci jde o vyprseni, jinak jen zobrazit prihlaseni
-function handleUnauthorized() { if (tickTimer) sessionExpired(); else showLogin(); }
-
-async function api(url, opts) {
-  const res = await fetch(url, opts);
-  if (res.status === 401 && !url.startsWith('/api/login')) { handleUnauthorized(); throw new Error('Unauthorized'); }
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) { const e = new Error(data.error || res.statusText); e.status = res.status; throw e; }
-  return data;
-}
-
-// ikonova tlacitka (inline SVG, bez zavislosti); popisek je v tooltipu a aria-label
-const ICONS = {
-  pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
-  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
-  unlock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
-  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
-};
-function iconBtn(icon, label, cls = '') {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.className = ('ibtn ' + cls).trim();
-  b.dataset.tip = label;
-  b.setAttribute('aria-label', label);
-  b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[icon]}</svg>`; // ICONS je konstanta v kodu, ne uzivatelsky vstup
-  return b;
-}
-
-function showLogin() { endSession(); $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
-function showApp(me) {
-  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
-  if (me) startSession(me.timeoutSec, me.remainingSec);
-  load('');
-}
-
-$('loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  $('loginErr').textContent = '';
-  try {
-    const r = await api('/api/login', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ user: $('user').value, password: $('pass').value }) });
-    $('pass').value = '';
-    showApp(r);
-  } catch (err) { $('loginErr').textContent = err.message === 'Invalid credentials' ? 'Špatné jméno nebo heslo' : err.message; }
-});
-
-$('logout').addEventListener('click', async () => { await api('/api/logout', { method:'POST' }).catch(() => {}); showLogin(); });
-
-function fmtSize(n) {
-  if (n == null) return '';
-  const u = ['B','KB','MB','GB','TB']; let i = 0;
-  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return (i ? n.toFixed(1) : n) + ' ' + u[i];
-}
-
-function fmtDate(ms) {
-  if (!ms) return '';
-  return new Date(ms).toLocaleString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function setStatus(t) { $('status').textContent = t || ''; }
-
-// --- toasty a dialogy ---
-const MSG = {
-  'File already exists': 'Soubor se stejným názvem už existuje',
-  'Target already exists': 'Cíl se stejným názvem už existuje',
-  'Cannot move into itself': 'Složku nelze přesunout do sebe sama',
-  'Source and target are the same': 'Zdroj a cíl jsou stejné',
-  'File too large': 'Soubor je příliš velký',
-  'Invalid name': 'Neplatný název',
-  'Invalid path': 'Neplatná cesta',
-  'Too many attempts, try later': 'Příliš mnoho pokusů, zkus to později',
-  'Network error': 'Chyba sítě',
-  'Upload aborted': 'Nahrávání bylo přerušeno',
-  'Item is locked': 'Položka je zamčená, nejdřív ji odemkni',
-  'Wrong lock password': 'Špatné heslo',
-  'Password required': 'Zadej heslo',
-  'Already locked': 'Položka už je zamčená (nebo ji chrání nadřazená složka)',
-  'Not locked': 'Tato položka už není zamčená',
-  'Cannot lock root': 'Kořenovou složku nelze zamknout',
-};
-const tr = (m) => MSG[m] || m;
-
-function toast(msg, type = 'ok') {
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.textContent = type === 'error' ? tr(msg) : msg;
-  $('toasts').append(t);
-  requestAnimationFrame(() => t.classList.add('show'));
-  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, type === 'error' ? 5000 : 2500);
-}
-
-// jeden sdileny <dialog>; vraci Promise (true/false u confirm, text/null u input)
-// onSubmit (volitelne): async akce po potvrzeni; pri chybe se zobrazi v dialogu a dialog zustane otevreny
-// label2 (volitelne): druhe pole s heslem pro kontrolu; onSubmit pak dostane (hodnota, hodnota2)
-function openDialog({ title, text, label, label2, value, okText = 'OK', danger = false, input = false, selectName = false, type = 'text', onSubmit }) {
-  const dlg = $('dlg'), form = $('dlgForm'), inp = $('dlgInput'), inp2 = $('dlgInput2'), ok = $('dlgOk');
-  const isPassword = type === 'password';
-  $('dlgLabel2').textContent = label2 || '';
-  $('dlgLabel2').classList.toggle('hidden', !label2);
-  inp2.classList.toggle('hidden', !label2);
-  inp2.value = '';
-  $('dlgTitle').textContent = title;
-  $('dlgText').textContent = text || '';
-  $('dlgText').classList.toggle('hidden', !text);
-  $('dlgLabel').textContent = label || '';
-  $('dlgLabel').classList.toggle('hidden', !input);
-  inp.classList.toggle('hidden', !input);
-  inp.type = type;
-  if (isPassword) inp.removeAttribute('maxlength'); else inp.setAttribute('maxlength', '255'); // heslo bez omezeni delky
-  inp.autocomplete = isPassword ? 'new-password' : 'off';
-  inp.value = value || '';
-  $('dlgErr').textContent = '';
-  ok.disabled = false;
-  ok.textContent = okText;
-  ok.className = danger ? 'dangerSolid' : '';
-  const readValue = () => (isPassword ? inp.value : inp.value.trim());
-  return new Promise((resolve) => {
-    const done = (result) => { dlg.removeEventListener('close', onClose); form.onsubmit = null; resolve(result); };
-    const onClose = () => done(dlg.returnValue === 'ok' ? (input ? readValue() || null : true) : (input ? null : false));
-    dlg.addEventListener('close', onClose);
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      if (onSubmit) {
-        ok.disabled = true; $('dlgErr').textContent = '';
-        try { await onSubmit(input ? readValue() : true, inp2.value); }
-        catch (err) { $('dlgErr').textContent = tr(err.message); ok.disabled = false; if (input) { inp.focus(); inp.select(); } return; }
-      }
-      dlg.close('ok');
-    };
-    dlg.returnValue = '';
-    dlg.showModal();
-    if (input) {
-      inp.focus();
-      const dot = selectName ? inp.value.lastIndexOf('.') : -1;
-      inp.setSelectionRange(0, dot > 0 ? dot : inp.value.length);
-    } else ok.focus();
-  });
-}
-const askConfirm = (o) => openDialog(o);
-const askInput = (o) => openDialog({ ...o, input: true });
-$('dlgCancel').addEventListener('click', () => $('dlg').close('cancel'));
-$('dlg').addEventListener('click', (e) => { if (e.target === $('dlg')) $('dlg').close('cancel'); }); // klik na pozadi
-
-async function load(path) {
-  try {
-    const items = await api('/api/files?path=' + encodeURIComponent(path));
-    cwd = path;
-    renderCrumbs();
-    renderList(items);
-    setStatus('');
-  } catch (err) {
-    if (err.message === 'Unauthorized') return;
-    toast(err.message, 'error');
-    if (err.status === 423 && path) load(''); // slozka je (zase) zamcena, zpet do korene
-  }
-}
-
-function renderCrumbs() {
-  const c = $('crumbs'); c.textContent = '';
-  const root = document.createElement('a'); root.textContent = 'Domů'; root.onclick = () => load('');
-  makeDropTarget(root, '');
-  c.append(root);
-  let acc = '';
-  for (const part of cwd.split('/').filter(Boolean)) {
-    acc = join(acc, part);
-    const p = acc;
-    c.append(' / ');
-    const a = document.createElement('a'); a.textContent = part; a.onclick = () => load(p);
-    makeDropTarget(a, p);
-    c.append(a);
-  }
-}
-
-const DRAG_TYPE = 'application/x-nas-path';
-
-async function moveItem(from, dir) {
-  const to = join(dir, from.split('/').pop());
-  if (to === from) return;
-  try { await api('/api/move', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ from, to }) }); }
-  catch (err) { toast(err.message, 'error'); return; }
-  await load(cwd);
-  toast('Přesunuto');
-}
-
-// prvek prijima presouvane polozky z aplikace i soubory z disku (-> upload do dir)
-function makeDropTarget(el, dir) {
-  const accepts = (e) => e.dataTransfer.types.includes(DRAG_TYPE) || e.dataTransfer.types.includes('Files');
-  el.addEventListener('dragover', (e) => { if (!accepts(e)) return; e.preventDefault(); e.stopPropagation(); el.classList.add('over'); });
-  el.addEventListener('dragleave', () => el.classList.remove('over'));
-  el.addEventListener('drop', (e) => {
-    if (!accepts(e)) return;
-    e.preventDefault(); e.stopPropagation(); el.classList.remove('over');
-    const from = e.dataTransfer.getData(DRAG_TYPE);
-    if (from) { if (from !== dir) moveItem(from, dir); return; }
-    const files = [...e.dataTransfer.files].filter(f => f.size > 0 || f.type);
-    if (files.length) uploadFiles(files, dir);
-  });
-}
-
-function renderList(items) {
-  const list = $('list'); list.textContent = '';
-  const jobs = [];
-  const head = document.createElement('div'); head.className = 'row head';
-  for (const t of ['Název', 'Velikost', 'Datum přidání', 'Operace']) {
-    const c = document.createElement('div'); c.textContent = t; head.append(c);
-  }
-  list.append(head);
-  if (cwd) { // radek ".." = o uroven vys (i cil pro presun)
-    const parent = cwd.split('/').slice(0, -1).join('/');
-    const row = document.createElement('div'); row.className = 'row';
-    const name = document.createElement('div'); name.className = 'name';
-    const a = document.createElement('a'); a.textContent = '⬆️ ..'; a.onclick = () => load(parent);
-    name.append(a);
-    makeDropTarget(row, parent);
-    row.append(name, document.createElement('div'), document.createElement('div'), document.createElement('div'));
-    list.append(row);
-  }
-  if (!items.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = 'Složka je prázdná'; list.append(d); return; }
-  for (const it of items) {
-    const full = join(cwd, it.name);
-    const locked = !!(it.lock && !it.lock.unlocked); // zamcena a zatim neodemcena
-    const row = document.createElement('div'); row.className = 'row' + (locked ? ' locked' : '');
-    row.draggable = !locked;
-    row.addEventListener('dragstart', (e) => { e.dataTransfer.setData(DRAG_TYPE, full); e.dataTransfer.effectAllowed = 'move'; row.classList.add('dragging'); });
-    row.addEventListener('dragend', () => row.classList.remove('dragging'));
-    if (it.dir && !locked) makeDropTarget(row, full);
-    const name = document.createElement('div'); name.className = 'name';
-    const a = document.createElement('a');
-    a.textContent = (it.dir ? '📁 ' : '📄 ') + it.name;
-    if (locked) { a.href = '#'; a.onclick = (e) => { e.preventDefault(); unlockItem(it, full, false); }; } // klik = dialog s heslem
-    else if (it.dir) a.onclick = () => load(full);
-    else a.href = '/api/download?path=' + encodeURIComponent(full);
-    name.append(a);
-    if (it.lock) name.append(lockBadge(it.lock));
-    const meta = document.createElement('div'); meta.className = 'meta size';
-    meta.textContent = fmtSize(it.size);
-    const date = document.createElement('div'); date.className = 'meta date';
-    date.textContent = fmtDate(it.mtime);
-    const sub = document.createElement('div'); sub.className = 'sub'; // jen na mobilu
-    sub.textContent = [fmtSize(it.size), fmtDate(it.mtime)].filter(Boolean).join(' · ');
-    name.append(sub);
-    if (it.dir) { meta.textContent = '…'; jobs.push({ full, meta, sub, date: fmtDate(it.mtime) }); } // velikost slozky se dopocita async
-    const del = iconBtn('trash', 'Smazat', 'danger tip-end');
-    del.onclick = async () => {
-      const ok = await askConfirm({
-        title: it.dir ? 'Smazat složku?' : 'Smazat soubor?',
-        text: `„${it.name}“${it.dir ? ' bude smazána včetně veškerého obsahu.' : ' bude trvale smazán.'} Akci nelze vrátit zpět.`,
-        okText: 'Smazat', danger: true,
-      });
-      if (!ok) return;
-      try { await api('/api/files?path=' + encodeURIComponent(full), { method:'DELETE' }); await load(cwd); toast('Smazáno'); }
-      catch (err) { toast(err.message, 'error'); }
-    };
-    const ren = iconBtn('pencil', 'Přejmenovat', 'ghost');
-    ren.onclick = async () => {
-      const nn = await askInput({ title: 'Přejmenovat', label: 'Nový název', value: it.name, okText: 'Přejmenovat', selectName: !it.dir });
-      if (!nn || nn === it.name) return;
-      try {
-        await api('/api/move', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ from: full, to: join(cwd, nn) }) });
-        await load(cwd); toast('Přejmenováno');
-      } catch (err) { toast(err.message, 'error'); }
-    };
-    const actions = document.createElement('div'); actions.className = 'actions';
-    if (locked) {
-      // zamcene: jedina operace je zruseni zamku (heslem); mazat ani prejmenovat nejde
-      const perm = iconBtn('unlock', 'Odemknout natrvalo (zrušit zámek)', 'ghost tip-end');
-      perm.onclick = () => unlockItem(it, full, true);
-      actions.append(perm);
-    } else {
-      if (!it.lock) {
-        const lock = iconBtn('lock', 'Zamknout', 'ghost');
-        lock.onclick = () => lockItem(it, full);
-        actions.append(lock);
-      } else if (it.lock.root) {
-        const relock = iconBtn('lock', 'Zamknout znovu', 'ghost');
-        relock.onclick = () => relockItem(full);
-        const perm = iconBtn('unlock', 'Odemknout natrvalo (zrušit zámek)', 'ghost');
-        perm.onclick = () => unlockItem(it, full, true);
-        actions.append(relock, perm);
-      }
-      actions.append(ren, del);
-    }
-    row.append(name, meta, date, actions);
-    list.append(row);
-  }
-  loadSizes(jobs);
-}
-
-// --- zamky ---
-// znacka u nazvu: zamcene (zlute), odemcene v teto relaci (zelene), zdedene po rodici (sede)
-function lockBadge(lock) {
-  const s = document.createElement('span');
-  const state = !lock.unlocked ? 'locked' : lock.root ? 'open' : 'inherit';
-  s.className = 'lockbadge ' + state;
-  // nativni title (ne data-tip): .name ma overflow:hidden a vlastni tooltip by se oriznul
-  s.title = !lock.unlocked ? 'Zamčeno' : lock.root ? 'Odemčeno do odhlášení' : 'Chráněno zamčenou složkou';
-  s.setAttribute('aria-label', s.title);
-  s.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[lock.unlocked ? 'unlock' : 'lock']}</svg>`; // ICONS je konstanta v kodu
-  return s;
-}
-
-const jsonPost = (url, body) => api(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-
-// zamknuti: uzivatel zvoli vlastni heslo teto polozky (zadava se dvakrat, heslo nejde obnovit)
-async function lockItem(it, full) {
-  const ok = await askInput({
-    title: it.dir ? 'Zamknout složku' : 'Zamknout soubor',
-    text: `Nastav heslo pro „${it.name}“. Bez něj ji nepůjde otevřít, přejmenovat, přesunout ani smazat. Heslo nejde obnovit, tak si ho zapamatuj.`,
-    label: 'Heslo', label2: 'Heslo znovu', type: 'password', okText: 'Zamknout',
-    onSubmit: async (password, again) => {
-      if (!password) throw new Error('Password required');
-      if (password !== again) throw new Error('Hesla se neshodují');
-      await jsonPost('/api/lock', { path: full, password });
-    },
-  });
-  if (ok) { await load(cwd); toast('Zamčeno'); }
-}
-
-async function relockItem(full) {
-  try { await jsonPost('/api/relock', { path: full }); await load(cwd); toast('Zamčeno'); }
-  catch (err) { toast(err.message, 'error'); }
-}
-
-// permanent = false: odemknout do odhlaseni (klik na polozku); true: zrusit zamek natrvalo.
-// Obojí vyzaduje heslo, ktere uzivatel nastavil pri zamknuti teto polozky.
-async function unlockItem(it, full, permanent) {
-  const ok = await askInput({
-    title: permanent ? 'Zrušit zámek' : 'Odemknout',
-    text: permanent
-      ? `Zámek u „${it.name}“ bude trvale zrušen. Zadej heslo, které jsi pro ni nastavil.`
-      : `„${it.name}“ je zamčená. Zadej její heslo, odemkne se, dokud se neodhlásíš.`,
-    label: 'Heslo', type: 'password',
-    okText: permanent ? 'Zrušit zámek' : 'Odemknout', danger: permanent,
-    onSubmit: (password) => jsonPost(permanent ? '/api/lock/remove' : '/api/unlock', { path: full, password }),
-  });
-  if (!ok) return;
-  if (permanent) { await load(cwd); toast('Zámek zrušen'); }
-  else if (it.dir) { toast('Odemčeno do odhlášení'); await load(full); } // odemcenou slozku rovnou otevre
-  else { await load(cwd); toast('Odemčeno do odhlášení'); }
-}
-
-// soucty velikosti slozek: po jedne, aby se server nezahltil; zastaralá davka se zahodi
-let sizeJob = 0;
-async function loadSizes(jobs) {
-  const job = ++sizeJob;
-  for (const j of jobs) {
-    if (job !== sizeJob) return;
-    try {
-      const { size } = await api('/api/size?path=' + encodeURIComponent(j.full));
-      j.meta.textContent = fmtSize(size);
-      j.sub.textContent = [fmtSize(size), j.date].filter(Boolean).join(' · ');
-    } catch { j.meta.textContent = '–'; }
-  }
-}
-
-$('mkdirBtn').addEventListener('click', async () => {
-  const name = await askInput({ title: 'Nová složka', label: 'Název složky', okText: 'Vytvořit' });
-  if (!name) return;
-  try {
-    await api('/api/mkdir', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ path: cwd, name }) });
-    await load(cwd); toast('Složka vytvořena');
-  } catch (err) { toast(err.message, 'error'); }
-});
-
-function uploadOne(file, dir, onProgress) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', `/api/upload?path=${encodeURIComponent(dir)}&name=${encodeURIComponent(file.name)}`);
-    xhr.upload.onprogress = (e) => { onActivity(); if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); }; // probihajici upload drzi relaci
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) return resolve();
-      let msg = xhr.statusText; try { msg = JSON.parse(xhr.responseText).error || msg; } catch {}
-      if (xhr.status === 401) handleUnauthorized();
-      reject(new Error(msg));
-    };
-    xhr.onerror = () => reject(new Error('Network error'));
-    xhr.send(file);
-  });
-}
-
-async function uploadFiles(files, dir = cwd) {
-  let i = 0;
-  for (const f of files) {
-    i++;
-    try { await uploadOne(f, dir, (p) => setStatus(`Nahrávám ${i}/${files.length}: ${f.name} (${p} %)`)); }
-    catch (err) { setStatus(''); toast(`„${f.name}“: ${err.message}`, 'error'); await load(cwd); return; }
-  }
-  setStatus('');
-  await load(cwd);
-  toast(files.length === 1 ? 'Soubor nahrán' : `Nahráno souborů: ${files.length}`);
-}
-
-$('upBtn').addEventListener('click', () => $('fileInput').click());
-$('fileInput').addEventListener('change', (e) => { uploadFiles([...e.target.files]); e.target.value = ''; });
-
-const drop = $('drop');
-['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
-['dragleave','drop'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', (e) => {
-  const files = [...e.dataTransfer.files].filter(f => f.size > 0 || f.type);
-  if (files.length) uploadFiles(files);
-});
-
-// verze z package.json (pres /api/health); chyba nesmi rozbit stranku
-api('/api/health').then((h) => { if (h.version) $('ver').textContent = 'NAS Files v' + h.version; }).catch(() => {});
-
-// start: pokud je session platna, rovnou aplikace
-fetch('/api/me').then(async (r) => r.ok ? showApp(await r.json()) : showLogin()).catch(showLogin);
-</script>
+<script src="app.js"></script>
 </body>
 </html>

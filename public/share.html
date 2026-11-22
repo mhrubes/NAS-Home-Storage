@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Sdílený soubor</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --text:#1c1e21; --muted:#6b7280; --line:#e5e7eb; --accent:#2563eb; --danger:#dc2626; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#111317; --card:#1b1e24; --text:#e8eaed; --muted:#9aa0a6; --line:#2b2f37; --accent:#5b8def; --danger:#f0605d; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:16px; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, sans-serif; }
+  .card { width:100%; max-width:420px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:28px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,.15); }
+  .icon { font-size:44px; line-height:1; margin-bottom:10px; }
+  h1 { margin:0 0 4px; font-size:19px; word-break:break-word; }
+  .meta { color:var(--muted); font-size:14px; margin-bottom:20px; }
+  a.btn { display:inline-block; background:var(--accent); color:#fff; text-decoration:none; padding:10px 22px; border-radius:8px; font-weight:600; }
+  a.btn:hover { filter:brightness(1.1); }
+  .err { color:var(--danger); }
+  .foot { margin-top:18px; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="icon" id="icon">⏳</div>
+  <h1 id="title">Načítám…</h1>
+  <div class="meta" id="meta"></div>
+  <div id="action"></div>
+  <div class="foot">Soukromé úložiště. Odkaz má omezenou platnost.</div>
+</div>
+<script>
+const token = location.pathname.split('/')[2] || '';
+
+function fmtSize(n) {
+  if (n == null) return '';
+  const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return (i ? n.toFixed(1) : n) + ' ' + u[i];
+}
+
+function fmtLeft(ms) {
+  const m = Math.max(0, Math.floor(ms / 60000));
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  return h < 48 ? `${h} h` : `${Math.floor(h / 24)} dní`;
+}
+
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  try {
+    const res = await fetch('/api/s/' + encodeURIComponent(token));
+    if (!res.ok) throw new Error('nenalezeno');
+    const s = await res.json();
+    document.title = s.name;
+    $('icon').textContent = s.dir ? '📁' : '📄';
+    $('title').textContent = s.name;
+    $('meta').textContent = [s.dir ? 'Složka (stáhne se jako ZIP)' : fmtSize(s.size), 'platí ještě ' + fmtLeft(s.expires - Date.now())].filter(Boolean).join(' · ');
+    const a = document.createElement('a');
+    a.className = 'btn'; a.textContent = s.dir ? 'Stáhnout ZIP' : 'Stáhnout';
+    a.href = `/s/${encodeURIComponent(token)}/download`;
+    $('action').append(a);
+  } catch {
+    document.title = 'Odkaz není dostupný';
+    $('icon').textContent = '🚫';
+    $('title').textContent = 'Odkaz není dostupný';
+    $('title').className = 'err';
+    $('meta').textContent = 'Odkaz neexistuje, vypršel nebo byl zrušen.';
+  }
+})();
+</script>
+</body>
+</html>

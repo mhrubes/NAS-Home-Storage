@@ -150,6 +150,27 @@ class LockStore {
     if (changed) await this.save();
   }
 
+  // presun do kose: zamky uvnitr polozky se odpoji a ulozi (kluc = zbytek cesty pod polozkou), pri obnoveni se vrati
+  async detach(rel) {
+    const r = norm(rel);
+    const out = {};
+    for (const [k, v] of [...this.entries]) {
+      if (covers(r, k)) { out[k.slice(r.length)] = v; this.entries.delete(k); }
+    }
+    if (Object.keys(out).length) {
+      for (const s of this.sessions.values()) for (const k of [...s.open]) if (covers(r, k)) s.open.delete(k);
+      await this.save();
+    }
+    return out;
+  }
+
+  async attach(rel, detached) { // vrati zamky odpojene detach() pod novou cestu polozky
+    const r = norm(rel);
+    let any = false;
+    for (const [suffix, stored] of Object.entries(detached || {})) { this.entries.set(r + suffix, stored); any = true; }
+    if (any) await this.save();
+  }
+
   async removeUnder(rel) { // smazani polozky: zamky uvnitr zanikaji
     const r = norm(rel);
     const gone = [...this.entries.keys()].filter((k) => covers(r, k));
