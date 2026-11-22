@@ -35,6 +35,16 @@ Složka `STORAGE_PATH` musí být zapisovatelná pro uid 1000 (uživatel `node` 
 
 Bez `APP_USER`, `APP_PASSWORD_HASH` nebo `SESSION_SECRET` aplikace okamžitě skončí.
 
+## Verze
+
+Verze aplikace je jen v `package.json` (`"version"`). Zobrazuje se dole uprostřed stránky („NAS Files v1.1.0“, i na přihlašovací obrazovce), vypisuje ji server při startu a vrací ji `GET /api/health`. Zvýšit ji jde bez ruční úpravy souboru:
+
+```sh
+npm version patch --no-git-tag-version   # 1.1.0 -> 1.1.1 (minor: nové funkce, major: nekompatibilní změna)
+```
+
+Po zvýšení stačí commit, na NASu `git pull` a `docker compose up -d --build`. Podle čísla na stránce poznáš, která verze na NASu opravdu běží.
+
 ## Zámky souborů a složek
 
 U každé položky je ikona zámku. Zamčená položka zůstává vidět v seznamu s označením (žlutý zámek), ale nejde ji otevřít, stáhnout, přejmenovat, přesunout ani smazat a nejde do ní nahrávat.
@@ -75,4 +85,4 @@ Zámek chrání proti změnám a otevření přes aplikaci. Soubory ale zůstáv
 | POST | `/api/relock` | `{path}` znovu zamkne v teto relaci |
 | POST | `/api/lock/remove` | `{path, password}` zrusi zamek natrvalo |
 | DELETE | `/api/files?path=` | smazání souboru/složky |
-| GET | `/api/health` | healthcheck |
+| GET | `/api/health` | healthcheck, vrací `{ok, version}` |

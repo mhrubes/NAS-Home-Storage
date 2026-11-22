@@ -1,6 +1,6 @@
 {
   "name": "nas-storage",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Jednoduche domaci uloziste s prihlasenim (scrypt hash v .env)",
   "main": "src/index.js",
   "scripts": {

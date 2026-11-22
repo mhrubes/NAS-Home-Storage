@@ -5,6 +5,9 @@ const fsp = fs.promises;
 const { checkLogin, signToken, parseToken, tokenExpiry } = require('./auth');
 const { LockStore } = require('./locks');
 
+// verze aplikace je jediny zdroj pravdy v package.json (zobrazuje se na strance a vraci /api/health)
+const APP_VERSION = require('../package.json').version;
+
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 const ROOT = path.resolve(process.env.STORAGE_DIR || './data');
 const MAX_UPLOAD = (parseInt(process.env.MAX_UPLOAD_MB, 10) || 2048) * 1024 * 1024;
@@ -136,7 +139,7 @@ function requireAuth(req, res, next) {
 // uklid odemknuti zamku po relacich, ktere uz vyprsely
 setInterval(() => locks.prune(COOKIE_MAX_AGE + 60 * 1000), 60 * 1000).unref();
 
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get('/api/health', (req, res) => res.json({ ok: true, version: APP_VERSION }));
 
 app.get('/api/me', requireAuth, (req, res) => {
   const remaining = remainingSec(req);
@@ -350,4 +353,4 @@ app.post('/api/lock/remove', requireAuth, jsonBody, wrap(async (req, res) => {
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-app.listen(PORT, () => console.log(`nas-storage listening on :${PORT}, storage ${ROOT}`));
+app.listen(PORT, () => console.log(`nas-storage v${APP_VERSION} listening on :${PORT}, storage ${ROOT}`));
